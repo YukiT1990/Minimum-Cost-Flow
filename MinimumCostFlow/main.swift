@@ -5,18 +5,22 @@
 //  Created by Yuki Tsukada on 2021/04/12.
 //
 
+
+
 import Foundation
 
 func solution() {
     let output = kruskalMST()
-    print(output.0)
-    print(output.1)
-    print(output.2)
-    print("result \(output.1.count - output.2.count)")
+    // output.0  total cost
+    // output.1  the edges in MST
+    // output.2  common edges in in originallyActivatedEdges and mstEdges
+    
+    print(output.1.count - output.2.count)
 }
 
 public func kruskalMST() -> (Int, [(Int, Int, Int)], [(Int, Int, Int)]) {
     var allEdges = [(u: Int, v: Int, w: Int)]()
+    var allEdgesInDescendingWeight = [(u: Int, v: Int, w: Int)]()
     var allEdgesWithoutSubtraction = [(u: Int, v: Int, w: Int)]()
     var originallyActivatedEdges = [(u: Int, v: Int, w: Int)]()
     var sortedEdges = [(u: Int, v: Int, w: Int)]()
@@ -28,21 +32,33 @@ public func kruskalMST() -> (Int, [(Int, Int, Int)], [(Int, Int, Int)]) {
     let M = firstLine[1]!
     let D = firstLine[2]!
     
+    let maxChangableEdge = M - (N - 1)
+    
     // all edge numbers are reduced by 1 as the number starts from 1 (not 0)
     for _ in 0...M - 1 {
         let edgeInfo = readLine()!.split(separator: " ").map { Int($0)! }
         allEdges.append((u: edgeInfo[0] - 1, v: edgeInfo[1] - 1, w: edgeInfo[2]))
         allEdgesWithoutSubtraction.append((u: edgeInfo[0], v: edgeInfo[1], w: edgeInfo[2]))
     }
-    print("allEdges \(allEdges)")
-    print("allEdgesWithoutSubtraction \(allEdgesWithoutSubtraction)")
+    
+    let costsAllArray: [Int] = allEdges.map { $0.w }
+    let reducable1 = [D, costsAllArray.max()!].min()!
+    
+    allEdgesInDescendingWeight = allEdges.sorted { $0.w > $1.w }
+    for (i, edge) in allEdgesInDescendingWeight.enumerated() {
+        if i > maxChangableEdge {
+            if edge.w >= reducable1 {
+                allEdgesInDescendingWeight[i].w -= reducable1
+            }
+        }
+    }
+    
     
     originallyActivatedEdges = Array(allEdgesWithoutSubtraction[0..<N - 1])
-    print("originallyActivatedEdges \(originallyActivatedEdges)")
     
-    sortedEdges = allEdges.sorted { $0.w < $1.w }
+    let costsOAE: Int = originallyActivatedEdges.map { $0.w }.reduce(0, +)
     
-    print("sortedEdges \(sortedEdges)")
+    sortedEdges = allEdgesInDescendingWeight.sorted { $0.w < $1.w }
     
     var uf = UF(M)
     for edge in sortedEdges {
@@ -70,8 +86,11 @@ public func kruskalMST() -> (Int, [(Int, Int, Int)], [(Int, Int, Int)]) {
         }
         j += 1
     }
-    print("commonEdges \(commonEdges)")
-    return (mstEdges.map { $0.w }.reduce(0, +), mstEdges, commonEdges)
+    
+    
+    let costsMst: Int = mstEdges.map { $0.w }.reduce(0, +)
+    
+    return (costsMst, mstEdges, commonEdges)
 }
 
 public struct UF {
